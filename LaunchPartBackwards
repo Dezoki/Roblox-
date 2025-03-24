@@ -1,0 +1,64 @@
+game.Players.PlayerAdded:Connect(function(player)
+	local gameStats = Instance.new("Folder")
+	gameStats.Name = "GameStats"
+	gameStats.Parent = player
+	
+	local clicks = Instance.new("IntValue")
+	clicks.Name = "Clicks"
+	clicks.Value = 0
+	clicks.Parent = gameStats
+end)
+
+local clicksChange = game.ReplicatedStorage.ClicksChange
+
+clicksChange.OnServerEvent:Connect(function(player)
+	local gameStats = player.GameStats
+	local clicks = gameStats.Clicks
+	
+	clicks.Value += 5
+end)
+
+local firepart = game.ReplicatedStorage.Firepart
+local Debris = game:GetService("Debris")
+
+firepart.OnServerEvent:Connect(function(player)
+	local gameStats = player.GameStats
+	local clicks = gameStats.Clicks
+	local character = player.Character or player.CharacterAdded:Wait()
+	local HRP = character:WaitForChild("HumanoidRootPart")
+
+	local partSize = math.max(1, clicks.Value / 6) -- Ensure a minimum size of 1
+	local spawnOffset = 3 -- Adjust how far behind the player the part spawns
+
+	-- Create part
+	local part = game.ReplicatedStorage.part:Clone()
+	part.Size = Vector3.new(partSize/1.2, partSize/1.5, partSize/1.2)
+	part.Parent = workspace
+	part.Orientation = Vector3.new(0, 0, 0)
+	part.CanCollide = true
+	part.Anchored = false
+	clicks.Value = 0
+
+	-- Ensure partFrame exists and is properly welded
+	local partFrame = part:FindFirstChild("partFrame")
+	if partFrame then
+		-- Unanchor partFrame
+		partFrame.Anchored = false
+
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = part
+		weld.Part1 = partFrame
+		weld.Parent = part
+	end
+
+	-- Spawn slightly behind the player
+	part.Position = HRP.Position - HRP.CFrame.LookVector * spawnOffset
+	
+	partFrame.Position = part.Position
+	partFrame.Orientation = part.Orientation
+	partFrame.Size = part.Size * 2
+
+	part.AssemblyLinearVelocity = -HRP.CFrame.LookVector * (100 * math.max(1, partSize/2.8))
+
+	Debris:AddItem(part, 2)
+end)
