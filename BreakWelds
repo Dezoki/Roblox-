@@ -1,0 +1,41 @@
+local speedThreshold = 5  
+
+local function setupWeldBreaker(part)
+	local welds = part:GetChildren() 
+
+	-- Filter only WeldConstraints
+	local weldConstraints = {}
+	for _, child in ipairs(welds) do
+		if child:IsA("WeldConstraint") then
+			table.insert(weldConstraints, child)
+		end
+	end
+
+	-- If no weld constraints exist, exit function
+	if #weldConstraints == 0 then return end
+
+	part.Touched:Connect(function(otherPart)
+		local otherVelocity = otherPart.AssemblyLinearVelocity.Magnitude 
+
+		if otherVelocity > speedThreshold and otherPart.Name == "PoopFrame" then
+			for _, weld in ipairs(weldConstraints) do
+				weld.Enabled = false  
+			end
+			print("All welds disabled on", part.Name, "due to high-speed collision!")
+		end
+	end)
+end
+
+-- Find all parts named "Part" in the game and apply the function
+for _, part in ipairs(workspace.Breakable:GetDescendants()) do
+	if part:IsA("BasePart") and part.Name == "Part" then
+		setupWeldBreaker(part)
+	end
+end
+
+-- Listen for new parts being added dynamically
+workspace.DescendantAdded:Connect(function(descendant)
+	if descendant:IsA("BasePart") and descendant.Name == "Part" then
+		setupWeldBreaker(descendant)
+	end
+end)
